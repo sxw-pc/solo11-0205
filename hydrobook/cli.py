@@ -5,9 +5,11 @@ import json
 from pathlib import Path
 import sqlite3
 
-from . import annual, archive, flow, horizon
+from . import annual, archive, capture_plan, flow, horizon, sensor_log
 from .formats import day, integer, require, text
 from .store import Snapshot, connect, ingest, initialize, transaction
+
+SAMPLER_ACTIONS = {'program': capture_plan.program, 'capture': sensor_log.capture, 'progress': sensor_log.progress}
 
 FIXTURES = Path(__file__).resolve().parents[1] / "fixtures"
 
@@ -33,6 +35,9 @@ def parser():
     for name in ("init", "demo", "audit"):
         sub.add_parser(name)
     sub.add_parser("capture").add_argument("file", type=Path)
+    sampler = sub.add_parser('sampler')
+    sampler.add_argument('action', choices=SAMPLER_ACTIONS)
+    sampler.add_argument('arguments')
     daily = sub.add_parser("chart-day")
     daily.add_argument("station", type=text)
     daily.add_argument("reach", type=text)
@@ -67,6 +72,11 @@ def execute(db, args):
         return annual.audit(db)
     if args.command == "demo":
         return demo(db)
+    if args.command == 'sampler':
+        arguments = json.loads(args.arguments)
+        require(isinstance(arguments, dict), 'expected sampler argument object')
+        capture_plan.initialize(db)
+        return SAMPLER_ACTIONS[args.action](db, **arguments)
     snapshot = Snapshot(db, args.cut)
     if args.command == "chart-day":
         return archive.stage(snapshot, args.station, args.reach, day(args.day))
@@ -92,9 +102,10 @@ def main(argv=None):
             if args.command == "init":
                 result = {"schema": 1}
             else:
-                with transaction(db, writing=args.command in ("capture", "issue", "demo")):
+                with transaction(db, writing=args.command in ("capture", "issue", "demo", "sampler")):
                     result = execute(db, args)
         print(json.dumps(result, indent=2, sort_keys=True))
         return 0
-    except (ValueError, OSError, sqlite3.Error) as error:
+    except (ValueError, TypeError, OSError, sqlite3.Error) as error:
         handle.exit(2, f"hydrobook: {error}\n")
+
