@@ -12,6 +12,9 @@ CREATE TABLE receipt(id INTEGER PRIMARY KEY, digest TEXT UNIQUE NOT NULL, raw BL
 CREATE TABLE reading_index(receipt INTEGER NOT NULL REFERENCES receipt, ordinal INTEGER NOT NULL,
    kind TEXT NOT NULL, identifier TEXT NOT NULL, revision INTEGER NOT NULL,
    PRIMARY KEY(receipt,ordinal));
+CREATE TABLE transport_volume(desk TEXT NOT NULL, shipment TEXT NOT NULL, part INTEGER NOT NULL,
+   total INTEGER NOT NULL, digest TEXT NOT NULL, raw BLOB NOT NULL,
+   receipt INTEGER NOT NULL REFERENCES receipt, PRIMARY KEY(desk,shipment,part));
 CREATE TABLE issue(id INTEGER PRIMARY KEY, edition TEXT NOT NULL, cut INTEGER NOT NULL REFERENCES receipt,
    prior INTEGER UNIQUE REFERENCES issue, digest TEXT NOT NULL, body TEXT NOT NULL,
    UNIQUE(edition,cut));

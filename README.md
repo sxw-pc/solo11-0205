@@ -35,3 +35,7 @@ python -m unittest discover -s tests -v
 - 各流量曲线的测量点以本地零点记录。有效测验唯一时才做分段内插，超范围和相互冲突的测验保留为缺项。整数边界做向外舍入。
 - 年鉴分别衡量水位和流量覆盖。演示将日代表流量乘以 86,400 秒得到日水量。只有一个测站的峰值下界严格超过其他站的峰值上界时才判定顺序。这个判断用独立的保守区间。
 - 签发序列保存收据截止号、报告和摘要。同一截止号重复签发复用原版，推进截止号形成新的版本。
+
+## 分卷收件
+
+receive-volume 采录站点归档组的分卷封套和原始收据。封套字段为 desk、shipment、part、total、records，分卷号从 1 开始。当前收到任一分卷即按常规证据接口采录其中的记录，shipment-status 查看实际收到或缺失的分卷。可在 init 后执行 receive-volume fixtures/shipment-02.json 和 shipment-status field shift-5。

@@ -1,0 +1,18 @@
+{
+  "desk": "field",
+  "shipment": "shift-5",
+  "part": 2,
+  "total": 2,
+  "records": [
+    {
+      "kind": "survey",
+      "id": "S2",
+      "rev": 1,
+      "state": "active",
+      "start": 5,
+      "end": 7,
+      "reviewer": "desk",
+      "result": "certified"
+    }
+  ]
+}

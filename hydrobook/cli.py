@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 import sqlite3
 
-from . import annual, archive, flow, horizon
+from . import annual, archive, channel, flow, horizon
 from .formats import day, integer, require, text
 from .store import Snapshot, connect, ingest, initialize, transaction
 
@@ -33,6 +33,10 @@ def parser():
     for name in ("init", "demo", "audit"):
         sub.add_parser(name)
     sub.add_parser("capture").add_argument("file", type=Path)
+    sub.add_parser("receive-volume").add_argument("file", type=Path)
+    volumes = sub.add_parser("shipment-status")
+    volumes.add_argument("desk", type=text)
+    volumes.add_argument("shipment", type=text)
     daily = sub.add_parser("chart-day")
     daily.add_argument("station", type=text)
     daily.add_argument("reach", type=text)
@@ -57,6 +61,10 @@ def parser():
 
 
 def execute(db, args):
+    if args.command == "receive-volume":
+        return channel.accept(db, args.file.read_bytes())
+    if args.command == "shipment-status":
+        return channel.status(db, args.desk, args.shipment)
     if args.command == "capture":
         return ingest(db, args.file.read_bytes())
     if args.command == "issue":
@@ -92,7 +100,7 @@ def main(argv=None):
             if args.command == "init":
                 result = {"schema": 1}
             else:
-                with transaction(db, writing=args.command in ("capture", "issue", "demo")):
+                with transaction(db, writing=args.command in ("capture", "receive-volume", "issue", "demo")):
                     result = execute(db, args)
         print(json.dumps(result, indent=2, sort_keys=True))
         return 0
