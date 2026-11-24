@@ -5,11 +5,12 @@ import json
 from pathlib import Path
 import sqlite3
 
-from . import annual, archive, capture_plan, flow, horizon, sensor_log
+from . import annual, archive, capture_plan, device_trigger, flow, horizon, sensor_log
 from .formats import day, integer, require, text
 from .store import Snapshot, connect, ingest, initialize, transaction
 
-SAMPLER_ACTIONS = {'program': capture_plan.program, 'capture': sensor_log.capture, 'progress': sensor_log.progress}
+SAMPLER_ACTIONS = {'program': capture_plan.program, 'capture': sensor_log.capture, 'progress': sensor_log.progress,
+                   'trigger': device_trigger.issue, 'ack': device_trigger.acknowledge}
 
 FIXTURES = Path(__file__).resolve().parents[1] / "fixtures"
 
@@ -76,6 +77,7 @@ def execute(db, args):
         arguments = json.loads(args.arguments)
         require(isinstance(arguments, dict), 'expected sampler argument object')
         capture_plan.initialize(db)
+        device_trigger.initialize(db)
         return SAMPLER_ACTIONS[args.action](db, **arguments)
     snapshot = Snapshot(db, args.cut)
     if args.command == "chart-day":
@@ -108,4 +110,5 @@ def main(argv=None):
         return 0
     except (ValueError, TypeError, OSError, sqlite3.Error) as error:
         handle.exit(2, f"hydrobook: {error}\n")
+
 
