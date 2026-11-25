@@ -38,4 +38,13 @@ python -m unittest discover -s tests -v
 
 ## 分卷收件
 
-receive-volume 采录站点归档组的分卷封套和原始收据。封套字段为 desk、shipment、part、total、records，分卷号从 1 开始。当前收到任一分卷即按常规证据接口采录其中的记录，shipment-status 查看实际收到或缺失的分卷。可在 init 后执行 receive-volume fixtures/shipment-02.json 和 shipment-status field shift-5。
+receive-volume 采录站点归档组的分卷封套和原始收据。封套字段为 desk、shipment、part、total、records，分卷号从 1 开始；可选的 groups 声明每条记录所属的修订组。收件凭证与证据入账分离：分卷到达立即写入 transport 收据和暂存区，可由 shipment-status 查询，但只有整组在同一证据截止上检验通过后才生成 posting 收据并进入证据投影，Snapshot 只反映已入账内容。
+
+修订组声明包含 id、parts（组所跨分卷）、members（本卷携带的成员记录 `[kind,id,rev]`）、replaces（被替代或撤销的旧修订）和 requires（原件依赖）。生效规则：
+
+- 完全自足、且其修订范围不依赖任何缺卷的组可以在缺卷情况下提前入账；跨卷组必须等齐 parts。同一组的替换、撤销和补件原子生效，不允许半组入账。
+- 相互引用对方未入账材料的组按连通分量联合检验：整组共同成立才一起入账；同一修订在暂存区出现不同原文即判 divergent_revision，整分量标记 CONFLICT，记录冲突来源（reason、sources）和可用下一步（next_step）。
+- 迟到卷与已入账修订冲突时标记 late_version_conflict，不覆盖先前内容；已生效记录只能由更高 rev 的正式修订推进，不能撤回成未收。
+- 封套或来源句柄重传按摘要去重，不重复生效。无 groups 声明时每条记录自成单卷隐式组，保持逐卷即入账的旧契约。
+
+可在 init 后执行 receive-volume fixtures/shipment-02.json 和 shipment-status field shift-5。status 返回的 evidence 取值为 HELD、PARTIALLY_POSTED、POSTED 或 CONFLICT，groups 给出每组状态、缺失分卷、入账收据与冲突明细。

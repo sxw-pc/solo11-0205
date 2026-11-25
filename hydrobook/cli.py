@@ -96,9 +96,9 @@ def main(argv=None):
         with closing(connect(args.db)) as db:
             if args.command in ("init", "demo"):
                 initialize(db)
-            require(db.execute("PRAGMA user_version").fetchone()[0] == 1, "unsupported database schema")
+            require(db.execute("PRAGMA user_version").fetchone()[0] == 2, "unsupported database schema")
             if args.command == "init":
-                result = {"schema": 1}
+                result = {"schema": db.execute("PRAGMA user_version").fetchone()[0]}
             else:
                 with transaction(db, writing=args.command in ("capture", "receive-volume", "issue", "demo")):
                     result = execute(db, args)
